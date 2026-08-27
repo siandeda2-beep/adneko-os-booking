@@ -1,0 +1,19 @@
+name: Actions Runner Diagnostic
+
+on:
+  push:
+    branches:
+      - diagnostic/actions-runner-20260826
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Runner acquired
+        run: |
+          echo "runner-acquired=true"
+          uname -a
