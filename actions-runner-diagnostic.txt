@@ -1,0 +1,2 @@
+GitHub Actions hosted-runner diagnostic only.
+No ADNEKO private source or secrets are included.
