@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: kicad/kicad:10.0.5
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       HOME: /tmp/kicad-home
       XDG_CONFIG_HOME: /tmp/kicad-home/.config
@@ -30,3 +30,52 @@ jobs:
           command -v kicad-cli
           kicad-cli --version
           kicad-cli --help >/dev/null
+
+      - name: Build portable KiCad CLI runtime
+        run: |
+          set -euxo pipefail
+          ROOT="$GITHUB_WORKSPACE/kicad-runtime"
+          mkdir -p "$ROOT/bin" "$ROOT/lib" "$ROOT/share" "$ROOT/etc/fonts"
+
+          cp -a /usr/bin/kicad-cli "$ROOT/bin/"
+          cp -a /usr/share/kicad "$ROOT/share/"
+          if [ -d /usr/share/fonts ]; then cp -a /usr/share/fonts "$ROOT/share/"; fi
+          if [ -d /etc/fonts ]; then cp -a /etc/fonts/. "$ROOT/etc/fonts/"; fi
+
+          ldd /usr/bin/kicad-cli | awk '/=> \/.*\(/ {print $3} /^\/.*\(/ {print $1}' | sort -u > "$ROOT/ldd.txt"
+          while IFS= read -r lib; do
+            [ -f "$lib" ] || continue
+            cp -a "$lib" "$ROOT/lib/"
+          done < "$ROOT/ldd.txt"
+
+          cat > "$ROOT/kicad-cli-portable" <<'EOF'
+          #!/bin/sh
+          set -eu
+          HERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+          export LD_LIBRARY_PATH="$HERE/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          export HOME="${HOME:-/tmp/kicad-home}"
+          export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+          export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+          export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+          export KICAD10_SYMBOL_DIR="$HERE/share/kicad/symbols"
+          export KICAD10_FOOTPRINT_DIR="$HERE/share/kicad/footprints"
+          export KICAD10_3DMODEL_DIR="$HERE/share/kicad/3dmodels"
+          export KICAD10_TEMPLATE_DIR="$HERE/share/kicad/template"
+          mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME"
+          exec "$HERE/bin/kicad-cli" "$@"
+          EOF
+          chmod +x "$ROOT/kicad-cli-portable"
+
+          "$ROOT/kicad-cli-portable" --version
+          "$ROOT/kicad-cli-portable" --help >/dev/null
+
+          tar -C "$GITHUB_WORKSPACE" -czf "$GITHUB_WORKSPACE/kicad-cli-10.0.5-linux-x86_64.tgz" kicad-runtime
+          ls -lh "$GITHUB_WORKSPACE/kicad-cli-10.0.5-linux-x86_64.tgz"
+
+      - name: Upload portable KiCad CLI runtime
+        uses: actions/upload-artifact@v4
+        with:
+          name: kicad-cli-10.0.5-linux-x86_64
+          path: kicad-cli-10.0.5-linux-x86_64.tgz
+          if-no-files-found: error
+          retention-days: 1
