@@ -12,7 +12,18 @@ jobs:
     container:
       image: kicad/kicad:10.0.5
     timeout-minutes: 10
+    env:
+      HOME: /tmp/kicad-home
+      XDG_CONFIG_HOME: /tmp/kicad-home/.config
+      XDG_CACHE_HOME: /tmp/kicad-home/.cache
+      XDG_DATA_HOME: /tmp/kicad-home/.local/share
     steps:
+      - name: Prepare writable KiCad home
+        run: |
+          set -euxo pipefail
+          mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME"
+          test -w "$HOME"
+
       - name: Verify KiCad CLI
         run: |
           set -euxo pipefail
