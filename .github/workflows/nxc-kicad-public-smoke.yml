@@ -39,10 +39,19 @@ jobs:
 
           cp -a /usr/bin/kicad-cli "$ROOT/bin/"
           cp -a /usr/share/kicad "$ROOT/share/"
+
+          find /usr -type f -name '*.kiface' -print | sort > "$ROOT/kifaces.txt"
+          test -s "$ROOT/kifaces.txt"
+          while IFS= read -r kiface; do
+            cp -L "$kiface" "$ROOT/bin/$(basename "$kiface")"
+          done < "$ROOT/kifaces.txt"
           if [ -d /usr/share/fonts ]; then cp -a /usr/share/fonts "$ROOT/share/"; fi
           if [ -d /etc/fonts ]; then cp -a /etc/fonts/. "$ROOT/etc/fonts/"; fi
 
-          ldd /usr/bin/kicad-cli | awk '/=> \/.*\(/ {print $3} /^\/.*\(/ {print $1}' | sort -u > "$ROOT/ldd.txt"
+          {
+            ldd /usr/bin/kicad-cli
+            while IFS= read -r kiface; do ldd "$kiface"; done < "$ROOT/kifaces.txt"
+          } | awk '/=> \/.*\(/ {print $3} /^\/.*\(/ {print $1}' | sort -u > "$ROOT/ldd.txt"
           while IFS= read -r lib; do
             [ -f "$lib" ] || continue
             cp -L "$lib" "$ROOT/lib/$(basename "$lib")"
@@ -73,6 +82,7 @@ jobs:
           ls -lh /tmp/kicad-cli-10.0.5-linux-x86_64.tgz
 
       - name: Upload portable KiCad CLI runtime
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: kicad-cli-10.0.5-linux-x86_64
