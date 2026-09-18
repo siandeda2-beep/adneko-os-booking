@@ -45,7 +45,7 @@ jobs:
           ldd /usr/bin/kicad-cli | awk '/=> \/.*\(/ {print $3} /^\/.*\(/ {print $1}' | sort -u > "$ROOT/ldd.txt"
           while IFS= read -r lib; do
             [ -f "$lib" ] || continue
-            cp -a "$lib" "$ROOT/lib/"
+            cp -L "$lib" "$ROOT/lib/$(basename "$lib")"
           done < "$ROOT/ldd.txt"
 
           cat > "$ROOT/kicad-cli-portable" <<'EOF'
