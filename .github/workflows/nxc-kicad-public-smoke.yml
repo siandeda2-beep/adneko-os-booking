@@ -1,0 +1,21 @@
+name: NXC KiCad Public Smoke
+
+on:
+  push:
+    branches:
+      - diagnostic/nxc-kicad-toolchain-20260918
+  workflow_dispatch:
+
+jobs:
+  kicad-smoke:
+    runs-on: ubuntu-24.04
+    container:
+      image: kicad/kicad:10.0.5
+    timeout-minutes: 10
+    steps:
+      - name: Verify KiCad CLI
+        run: |
+          set -euxo pipefail
+          command -v kicad-cli
+          kicad-cli --version
+          kicad-cli --help >/dev/null
