@@ -34,7 +34,7 @@ jobs:
       - name: Build portable KiCad CLI runtime
         run: |
           set -euxo pipefail
-          ROOT="$GITHUB_WORKSPACE/kicad-runtime"
+          ROOT="/tmp/kicad-runtime"
           mkdir -p "$ROOT/bin" "$ROOT/lib" "$ROOT/share" "$ROOT/etc/fonts"
 
           cp -a /usr/bin/kicad-cli "$ROOT/bin/"
@@ -69,13 +69,13 @@ jobs:
           "$ROOT/kicad-cli-portable" --version
           "$ROOT/kicad-cli-portable" --help >/dev/null
 
-          tar -C "$GITHUB_WORKSPACE" -czf "$GITHUB_WORKSPACE/kicad-cli-10.0.5-linux-x86_64.tgz" kicad-runtime
-          ls -lh "$GITHUB_WORKSPACE/kicad-cli-10.0.5-linux-x86_64.tgz"
+          tar -C /tmp -czf /tmp/kicad-cli-10.0.5-linux-x86_64.tgz kicad-runtime
+          ls -lh /tmp/kicad-cli-10.0.5-linux-x86_64.tgz
 
       - name: Upload portable KiCad CLI runtime
         uses: actions/upload-artifact@v4
         with:
           name: kicad-cli-10.0.5-linux-x86_64
-          path: kicad-cli-10.0.5-linux-x86_64.tgz
+          path: /tmp/kicad-cli-10.0.5-linux-x86_64.tgz
           if-no-files-found: error
           retention-days: 1
